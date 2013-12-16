@@ -6,7 +6,7 @@ int main(){
 	//cout << r << endl ;
 	Mat img = imread("Fig0516(a)(applo17_boulder_noisy).tif", CV_LOAD_IMAGE_GRAYSCALE) ;
 	Mat img2 = centering(img) ;
-	img2 = zeroPadding(img) ;
+	img2 = zeroPadding(img, 1) ;
 	imshow("img", img) ;
 	imshow("img2", img2) ;
 	cvWaitKey(0) ;

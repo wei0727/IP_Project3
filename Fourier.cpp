@@ -17,8 +17,20 @@ Mat centering(Mat &m){
 	return img ;
 }
 
-Mat zeroPadding(Mat &m){
-	Mat img = Mat::zeros(m.rows*2, m.cols*2, m.type()) ;
+Mat zeroPadding(Mat &m, int type){
+	Mat img ;
+	//col*2 row*2
+	if(type==0){
+		img = Mat::zeros(m.rows*2, m.cols*2, m.type()) ;
+	}
+	//padding to 2^k
+	else{
+		int num = 1 ;
+		while(num < m.rows || num <m.cols){
+			num = num<<1 ;
+		}
+		img = Mat::zeros(num, num, m.type()) ;
+	}
 	m.copyTo(img(cvRect(0, 0, m.cols, m.rows))) ;
 	return img ;
 }

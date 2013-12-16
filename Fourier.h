@@ -7,4 +7,4 @@ using namespace std;
 using namespace cv;
 
 Mat centering(Mat &m) ;
-Mat zeroPadding(Mat &m) ;
+Mat zeroPadding(Mat &m, int type=0) ;
