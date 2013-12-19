@@ -36,6 +36,22 @@ Mat zeroPadding(Mat &m, int type){
 	return img ;
 }
 
+Mat_<complex<double>> convertToCoplex(Mat &m){
+	Mat_<complex<double>> cm(m.rows, m.cols) ;
+	double *p ;
+	complex<double> *cp ;
+	for(int r=0; r<m.rows; r++){
+		p = m.ptr<double>(r) ;
+		cp = cm.ptr<complex<double>>(r) ;
+		for(int c=0; c<m.cols; c++){
+			cp[c] = complex<double>(p[c], 0) ;
+			//v[r][c] = complex<double>(p[c], 0) ;
+			//v[r][c] = 0 ;
+		}
+	}
+	return cm ;
+}
+
 vector< vector< complex<double>>> matToVector(Mat &m){
 	vector< vector< complex<double>>> v(m.rows, vector< complex<double>>(m.cols)) ;
 	double *p ;
@@ -76,13 +92,80 @@ vector<complex<double>> FFT_1D(vector<complex<double>> &m){
 	return f ;
 }
 
+//Mat_<complex<double>> FFT_1D(Mat_<complex<double>> &m){
+//	Mat_<complex<double>> v = rearrange(m) ;
+//	Mat_<complex<double>> f(v) ;
+//	for(int n=2; n!=v.cols; n=n<<1){
+//		Mat_<complex<double>> tmp(1, f.cols) ;
+//		complex<double> *tmpPtr = tmp.ptr<complex<double>>(0) ;
+//		complex<double> *fPtr = f.ptr<complex<double>>(0) ;
+//		int nGroup = v.cols/n ;
+//		int k = n >> 1 ;
+//		for(int index=0; index<nGroup; index++){
+//			for(int j=0; j<k; j++){
+//				int u = index*n + j ;
+//				double angle = CV_PI*j/k ;
+//				complex<double> w(cos(angle), -sin(angle)) ;
+//				tmpPtr[u] = fPtr[u] + fPtr[u+k]*w ;
+//				tmpPtr[u+k] = fPtr[u] - fPtr[u+k]*w ;
+//			}
+//		}
+//		//f = tmp ;
+//		tmp.copyTo(f) ;
+//	}
+//	return f ;
+//}
+
+vector<vector<complex<double>>> FFT_2D(vector<vector<complex<double>>> &m){
+	vector<vector<complex<double>>> f(m) ;
+	//rows
+	for(int r=0; r<m.size(); r++){
+		f[r] = FFT_1D(m[r]) ;
+	}
+	//cols
+	for(int c=0; c<m[0].size(); c++){
+		vector<complex<double>> col(m.size()) ;
+		//get col vector
+		for(int i=0; i<m.size(); i++)
+			col[i] = f[i][c] ;
+		col = FFT_1D(col) ;
+		//set col vector
+		for(int i=0; i<m.size(); i++)
+			f[i][c] = col[i] ;
+	}
+	return f ;
+}
+
+bool mCmp(int a, int b){
+	bitset<32> ba(a) ;
+	bitset<32> bb(b) ;
+	ba = reverseBit(ba) ;
+	bb = reverseBit(bb) ;
+	return ba.to_ulong() < bb.to_ulong() ;
+}
+
 vector<complex<double>> rearrange(vector<complex<double>> &m){
-	vector<complex<double>> v(m.size()) ;
+	vector< complex<double>> v(m.size()) ;
+	vector<int> tmp(m.size()) ;
 	for(int i=0; i<m.size(); i++){
-		bitset<32> b(i) ;
-		b = reverseBit(b) ;
-		int j = b.to_ulong() ;
-		v[j] = m[i] ;
+		tmp[i] = i ;
+	}
+	sort(tmp.begin(), tmp.end(), mCmp) ;
+	for(int i=0; i<m.size(); i++){
+		v[i] = m[tmp[i]] ;
 	}
 	return v ;
 }
+
+//Mat_<complex<double>> rearrange(Mat_<complex<double>> &m){
+//	Mat_<complex<double>> v(1, m.cols) ;
+//	complex<double> *p = v.ptr<complex<double>>(0) ;
+//	complex<double> *mp = m.ptr<complex<double>>(0) ;
+//	for(int i=0; i<m.cols; i++){
+//		bitset<32> b(i) ;
+//		b = reverseBit(b) ;
+//		int j = b.to_ulong() ;
+//		p[j] = mp[i] ;
+//	}
+//	return v ;
+//}
