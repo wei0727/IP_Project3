@@ -23,6 +23,7 @@ Mat_<complex<double>> convertToCoplex(Mat &m) ;
 vector< vector< complex<double>>> matToVector(Mat &m) ;
 Mat vectorToMat(vector<vector<complex<double>>> &v) ;
 Mat vectorToMat_enhanced(vector<vector<complex<double>>> &v) ;
+Mat vectorToMat_real(vector<vector<complex<double>>> &v) ;
 
 vector< complex<double>> FFT_1D(vector< complex<double>> &m) ;
 Mat_<complex<double>> FFT_1D(Mat_<complex<double>> &m) ;
@@ -45,13 +46,17 @@ Mat mulMat(Mat &m1, Mat &m2) ;
 vector<vector<complex<double>>> mulVec(vector<vector<complex<double>>> &v1, vector<vector<complex<double>>> &v2) ;
 
 //low pass gaussian
+vector<vector<complex<double>>> BLPF(vector<vector<complex<double>>> &m, double d0=1) ;
 vector<vector<complex<double>>> LPF_Gaussian(vector<vector<complex<double>>> &m, double d0=1) ;
 Mat LPF_Gaussian(Mat &m, double d0=1) ;
 //hight pass gaussian
 Mat HPF_Gaussian(Mat &m, double d0=1) ;
+vector<vector<complex<double>>> HPF_Gaussian(vector<vector<complex<double>>> &m, double d0=1) ;
 //hight frequency emphasis filter(gausian)
 vector<vector<complex<double>>> HFEF_Gaussian(vector<vector<complex<double>>> &m, double d0=1) ;
 Mat HFEF_Gaussian(Mat &m, double d0=1) ;
+
+vector<vector<complex<double>>> Butterworth_reject(vector<vector<complex<double>>> &m, double d0=1, double w=64, double n=1) ;
 
 Mat reverseMat(Mat &m) ;
 

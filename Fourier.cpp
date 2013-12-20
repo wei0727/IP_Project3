@@ -98,6 +98,32 @@ Mat vectorToMat(vector<vector<complex<double>>> &v){
 		p = m.ptr<uchar>(r) ;
 		for(int c=0; c<m.cols; c++){
 			p[c] = ((abs(v[r][c])-pmin)/(pmax-pmin))*255 ;
+			//p[c] = abs(v[r][c])-pmin ;
+		}
+	}
+	return m ;
+}
+
+Mat vectorToMat_real(vector<vector<complex<double>>> &v){
+	Mat m = Mat::zeros(v[0].size(), v.size(), CV_8UC1) ;
+	uchar *p ;
+	double pmin=abs(v[0][0]), pmax=abs(v[0][0]) ;
+	for(int r=0; r<m.rows; r++){
+		//p = m.ptr<double>(r) ;
+		for(int c=0; c<m.cols; c++){
+			//p[c] = abs(v[r][c]) ;
+			double p = v[r][c].real() ;
+			pmin = min(p, pmin) ;
+			pmax = max(p, pmax) ;
+		}
+	}
+	//cout << pmin << pmax << endl ;
+	for(int r=0; r<m.rows; r++){
+		p = m.ptr<uchar>(r) ;
+		for(int c=0; c<m.cols; c++){
+			//p[c] = v[r][c].real() ;
+			p[c] = ((v[r][c].real()-pmin)/(pmax-pmin)) ;
+			//p[c] *= ((r+c)&1==1? -1: 1) ;
 		}
 	}
 	return m ;
@@ -248,7 +274,20 @@ vector<vector<complex<double>>> FFT_2D(vector<vector<complex<double>>> &m){
 }
 
 vector<vector<complex<double>>> IFFT_2D(vector<vector<complex<double>>> &m){
-	return FFT_2D(m) ;
+	vector<vector<complex<double>>> v = m ;
+	for(int r=0; r<v.size(); r++){
+		for(int c=0; c<v[0].size(); c++){
+			v[r][c] = conj(v[r][c]) ;
+		}
+	}
+	v = FFT_2D(v) ;
+	double mn = v.size()*v[0].size() ;
+	for(int r=0; r<v.size(); r++){
+		for(int c=0; c<v[0].size(); c++){
+			v[r][c] /= mn ;
+		}
+	}
+	return v ;
 }
 
 bool mCmp(int a, int b){
@@ -371,7 +410,7 @@ Mat LPF_Gaussian(Mat &m, double d0){
 	for(int r=0; r<f.rows; r++){
 		p = f.ptr<double>(r) ;
 		for(int c=0; c<f.cols; c++){
-			double duv = sqrt((r-cr)*(r-cr) + (c-cc)*(c-cc)) ;
+			double duv = ((r-cr)*(r-cr) + (c-cc)*(c-cc)) ;
 			double g = exp(-duv/sigma) ;
 			//double h = 1-g ;
 			p[c] = g ;
@@ -390,7 +429,7 @@ Mat HPF_Gaussian(Mat &m, double d0){
 	for(int r=0; r<f.rows; r++){
 		p = f.ptr<double>(r) ;
 		for(int c=0; c<f.cols; c++){
-			double duv = sqrt((r-cr)*(r-cr) + (c-cc)*(c-cc)) ;
+			double duv = ((r-cr)*(r-cr) + (c-cc)*(c-cc)) ;
 			double g = exp(-duv/sigma) ;
 			double h = 1-g ;
 			p[c] = h ;
@@ -398,6 +437,25 @@ Mat HPF_Gaussian(Mat &m, double d0){
 	}
 	//cvShowImage("filter", &IplImage(f)) ;
 	return mulMat(m, f) ;
+}
+
+vector<vector<complex<double>>> HPF_Gaussian(vector<vector<complex<double>>> &m, double d0){
+	vector<vector<complex<double>>> f(m.size(), vector<complex<double>>(m[0].size(), complex<double>(0, 0))) ;
+	double sigma = 2*d0*d0 ;
+	int cr = m.size()/2 ;
+	int cc = m[0].size()/2 ;
+	for(int r=0; r<f.size(); r++){
+		for(int c=0; c<f[0].size(); c++){
+			double duv = ((r-cr)*(r-cr) + (c-cc)*(c-cc)) ;
+			double g = exp(-duv/sigma) ;
+			double h = 1-g ;
+			f[r][c] = h ;
+			//f[r][c] = complex<double>(k1 + k2*h, 0) ;
+		}
+	}
+	//Mat mf = vectorToMat(f) ;
+	//cvShowImage("high pass", &IplImage(mf)) ;
+	return mulVec(m, f) ;
 }
 
 vector<vector<complex<double>>> HFEF_Gaussian(vector<vector<complex<double>>> &m, double d0){
@@ -408,7 +466,7 @@ vector<vector<complex<double>>> HFEF_Gaussian(vector<vector<complex<double>>> &m
 	int cc = m[0].size()/2 ;
 	for(int r=0; r<f.size(); r++){
 		for(int c=0; c<f[0].size(); c++){
-			double duv = sqrt((r-cr)*(r-cr) + (c-cc)*(c-cc)) ;
+			double duv = ((r-cr)*(r-cr) + (c-cc)*(c-cc)) ;
 			double g = exp(-duv/sigma) ;
 			double h = 1-g ;
 			f[r][c] = k1 + k2*h ;
@@ -449,4 +507,22 @@ Mat reverseMat(Mat &m){
 		}
 	}
 	return img ;
+}
+
+vector<vector<complex<double>>> Butterworth_reject(vector<vector<complex<double>>> &m, double d0, double w, double n){
+	vector<vector<complex<double>>> f(m.size(), vector<complex<double>>(m[0].size(), complex<double>(1, 0))) ;
+	double d0square = d0*d0 ;
+	int cr = m.size()/2 ;
+	int cc = m[0].size()/2 ;
+	for(int r=0; r<f.size(); r++){
+		for(int c=0; c<f[0].size(); c++){
+			double duv = sqrt((r-cr)*(r-cr) + (c-cc)*(c-cc)) ;
+			if(duv>=(d0-w/2) && duv<=(d0+w/2)){
+				double base = duv*w/(duv*duv-d0square) ;
+				f[r][c] = 1/(1+pow(base, 2*n)) ;
+			}
+			//f[r][c] = complex<double>(k1 + k2*h, 0) ;
+		}
+	}
+	return mulVec(m, f) ;
 }

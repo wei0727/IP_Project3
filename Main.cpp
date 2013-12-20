@@ -37,38 +37,60 @@ void test(){
 	cout << v[3] << endl ;
 }
 
+void FFT_Spectrum(string imgName="Fig0424(a)(rectangle).tif"){
+	IplImage *iplimg = cvLoadImage(imgName.c_str(), CV_LOAD_IMAGE_GRAYSCALE) ;
+	Mat img(iplimg) ;
+	Mat m = centering(img) ;
+	vector<vector<complex<double>>> vImg = matToVector(m) ;
+	vector<vector<complex<double>>> vFFT = FFT_2D(vImg) ;
+	//Mat spectrum = vectorToMat(vFFT) ;
+	Mat spectrum_enhanced = vectorToMat_enhanced(vFFT) ;
+	cvShowImage("enhanced spectrum", &IplImage(spectrum_enhanced)) ;
+	cvWaitKey(0) ;
+}
+
+void FFT_HFEF_HIST(string imgName="Fig0459(a)(orig_chest_xray).tif"){
+	IplImage *iplimg = cvLoadImage(imgName.c_str(), CV_LOAD_IMAGE_GRAYSCALE) ;
+	Mat img(iplimg) ;
+	Mat m = centering(img) ;
+	m = zeroPadding(m, 1) ;
+	//m = zeroPadding(m, 0) ;
+	vector<vector<complex<double>>> vImg = matToVector(m) ;
+	vector<vector<complex<double>>> vFFT = FFT_2D(vImg) ;
+	vector<vector<complex<double>>> vHFFT = vFFT ;
+	vFFT = HFEF_Gaussian(vFFT, 40) ;
+	vHFFT = HPF_Gaussian(vHFFT, 40) ;
+	vector<vector<complex<double>>> vIFFT = IFFT_2D(vFFT) ;
+	vector<vector<complex<double>>> vIHFFT = IFFT_2D(vHFFT) ;
+	Mat ifImg = vectorToMat(vIFFT) ;
+	Mat hpfImg = vectorToMat(vIHFFT) ;
+	Mat hpfResult = hpfImg(cvRect(0, 0, img.cols, img.rows)) ;
+	Mat result = ifImg(cvRect(0, 0, img.cols, img.rows)) ;
+	Mat HFEFMat ;
+	result.copyTo(HFEFMat) ;
+	equalizeHist(result, result) ;
+	equalizeHist(img, img) ;
+	cvShowImage("b", &IplImage(hpfResult)) ;
+	cvShowImage("c", &IplImage(HFEFMat)) ;
+	cvShowImage("d", &IplImage(result)) ;
+	cvShowImage("Only histogram equalization", &IplImage(img)) ;
+	cvWaitKey(0) ;
+}
+
 int main(){
 	//test() ;
 	setTable() ;
-	IplImage *iplimg = cvLoadImage("Fig0459(a)(orig_chest_xray).tif", CV_LOAD_IMAGE_GRAYSCALE) ;
-	Mat img(iplimg) ;
-	//cvShowImage("input", iplimg) ;
-	Mat m = centering(img) ;
-	m = zeroPadding(m, 0) ;
-	m = zeroPadding(m, 1) ;
-	vector<vector<complex<double>>> vImg = matToVector(m) ;
-	vector<vector<complex<double>>> vFFT = FFT_2D(vImg) ;
-	//vFFT = LPF_Gaussian(vFFT, 10) ;
-	vFFT = HFEF_Gaussian(vFFT, 40) ;
-	//vector<vector<complex<double>>> vIFFT = IFFT_2D(vFFT) ;
-	Mat fImg = vectorToMat(vFFT) ;
-	//Mat fImg = vectorToMat_enhanced(vFFT) ;
-	//fImg = LPF_Gaussian(fImg, 10) ;
-	//fImg = HPF_Gaussian(fImg, 20) ;
-	//fImg = HFEF_Gaussian(fImg, 40) ;
-	//fImg = enhanceSpectrum(fImg) ;
-	//vector<vector<complex<double>>> vIFFT = FFT_2D(vFFT) ;
-	vector<vector<complex<double>>> vIFFT = IFFT_2D(vFFT) ;
-	Mat ifImg = vectorToMat(vIFFT) ;
-	//Mat reconstruct = ifImg(cvRect(ifImg.cols-img.cols-1, ifImg.rows-img.rows-1, img.cols, img.rows)) ;
-	//reconstruct = reverseMat(reconstruct) ;
-	//equalizeHist(reconstruct, reconstruct) ;
-	IplImage *iplfImg = cvCloneImage(&IplImage(fImg)) ;
-	IplImage *iplifImg = cvCloneImage(&IplImage(ifImg)) ;
-	cvSaveImage("fftSpectrum.jpg", iplfImg) ;
-	cvSaveImage("ifftSpectrum.jpg", iplifImg) ;
-	cvShowImage("output", iplfImg) ;
-	cvShowImage("output2", iplifImg) ;
-	cvWaitKey(0) ;
+	//FFT_Spectrum() ;
+	FFT_HFEF_HIST() ;
+	//IplImage *iplimg = cvLoadImage("Fig0333(a)(test_pattern_blurring_orig).tif", CV_LOAD_IMAGE_GRAYSCALE) ;
+	//Mat img(iplimg) ;
+	//Mat m = centering(img) ;
+	//m = zeroPadding(m, 1) ;
+	//vector<vector<complex<double>>> vImg = matToVector(m) ;
+	//vector<vector<complex<double>>> vFFT = FFT_2D(vImg) ;
+	//Mat spectrum = vectorToMat(vFFT) ;
+	////Mat spectrum_enhanced = vectorToMat_enhanced(vFFT) ;
+	//cvShowImage("enhanced spectrum", &IplImage(spectrum)) ;
+	//cvWaitKey(0) ;
 	return 0 ;
 }
