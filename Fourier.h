@@ -37,4 +37,14 @@ vector< complex<double>> rearrange(vector< complex<double>> &m) ;
 
 Mat enhanceSpectrum(Mat &m) ;
 
+//difference (uchar)
+Mat difMat(Mat &m1, Mat &m2) ;
+//Multiply
+//m1->img(uchar), m2->filter(double)
+Mat mulMat(Mat &m1, Mat &m2) ;
+//hight frequency emphasis filter
+Mat HFEF_Gausian(Mat &m, double d0=1) ;
+
+Mat reverseMat(Mat &m) ;
+
 

@@ -66,7 +66,7 @@ Mat_<complex<double>> convertToCoplex(Mat &m){
 }
 
 vector< vector< complex<double>>> matToVector(Mat &m){
-	vector< vector< complex<double>>> v(m.rows, vector< complex<double>>(m.cols)) ;
+	vector<vector<complex<double>>> v(m.rows, vector< complex<double>>(m.cols)) ;
 	double *p ;
 	for(int r=0; r<m.rows; r++){
 		p = m.ptr<double>(r) ;
@@ -134,12 +134,12 @@ bitset<16> reverseBit(bitset<16> &b){
 }
 
 vector<complex<double>> FFT_1D(vector<complex<double>> &m){
-	vector<complex<double>> v = rearrange(m) ;
-	vector<complex<double>> f = v ;
-	vector<complex<double>> tmp(v.size()) ;
-	for(int n=2; n<=v.size(); n=n<<1){
+	//vector<complex<double>> v = rearrange(m) ;
+	vector<complex<double>> f(m) ;
+	vector<complex<double>> tmp(f.size()) ;
+	for(int n=2; n<=f.size(); n=n<<1){
 		//vector<complex<double>> tmp(v.size()) ;
-		int nGroup = v.size()/n ;
+		int nGroup = f.size()/n ;
 		int k = n >> 1 ;
 		for(int index=0; index<nGroup; index++){
 			for(int j=0; j<k; j++){
@@ -204,10 +204,28 @@ vector< complex<double>> IFFT_1D(vector< complex<double>> &m){
 vector<vector<complex<double>>> FFT_2D(vector<vector<complex<double>>> &m){
 	vector<vector<complex<double>>> f(m) ;
 	//rows
-	for(int r=0; r<m.size(); r++){
-		f[r] = FFT_1D(m[r]) ;
+	//rearrange
+	vector<int> tmp(m.size()) ;
+	for(int i=0; i<m.size(); i++){
+		tmp[i] = i ;
 	}
+	sort(tmp.begin(), tmp.end(), mCmp) ;
+	for(int i=0; i<m.size(); i++){
+		for(int r=0; r<m.size(); r++)
+			f[r][i] = m[r][tmp[i]] ;
+	}
+	//FFT
+	for(int r=0; r<m.size(); r++){
+		f[r] = FFT_1D(f[r]) ;
+	}
+	vector<vector<complex<double>>> fr(f) ;
 	//cols
+	//rearrange
+	for(int i=0; i<m.size(); i++){
+		for(int c=0; c<m[0].size(); c++)
+			f[i][c] = fr[tmp[i]][c] ;
+	}
+	//FFT
 	for(int c=0; c<m[0].size(); c++){
 		vector<complex<double>> col(m.size()) ;
 		//get col vector
@@ -225,7 +243,7 @@ vector<vector<complex<double>>> IFFT_2D(vector<vector<complex<double>>> &m){
 	vector<vector<complex<double>>> f(m) ;
 	//rows
 	for(int r=0; r<m.size(); r++){
-		f[r] = FFT_1D(m[r]) ;
+		f[r] = IFFT_1D(m[r]) ;
 	}
 	//cols
 	for(int c=0; c<m[0].size(); c++){
@@ -233,7 +251,7 @@ vector<vector<complex<double>>> IFFT_2D(vector<vector<complex<double>>> &m){
 		//get col vector
 		for(int i=0; i<m.size(); i++)
 			col[i] = f[i][c] ;
-		col = FFT_1D(col) ;
+		col = IFFT_1D(col) ;
 		//set col vector
 		for(int i=0; i<m.size(); i++)
 			f[i][c] = col[i] ;
@@ -290,4 +308,67 @@ Mat enhanceSpectrum(Mat &m){
 		}
 	}
 	return e ;
+}
+
+Mat mulMat(Mat &m1, Mat &m2){
+	Mat img = Mat::zeros(m1.rows, m1.cols, m1.type()) ;
+	if(m1.rows!=m2.rows && m1.cols!=m2.cols)
+		return img ;
+	uchar *p, *p1 ;
+	double *p2 ;
+	for(int r=0; r<m1.rows; r++){
+		p = img.ptr<uchar>(r) ;
+		p1 = m1.ptr<uchar>(r) ;
+		p2 = m2.ptr<double>(r) ;
+		for(int c=0; c<m1.cols; c++){
+			p[c] = (p1[c]/255 * p2[c])*255 ;
+			//cout << (double)p[c] << endl ;
+		}
+	}
+	return img ;
+}
+
+Mat difMat(Mat &m1, Mat &m2){
+	Mat img = Mat::zeros(m1.rows, m1.cols, m1.type()) ;
+	uchar *p, *p1, *p2 ;
+	for(int r=0; r<m1.rows; r++){
+		p = img.ptr<uchar>(r) ;
+		p1 = m1.ptr<uchar>(r) ;
+		p2 = m2.ptr<uchar>(r) ;
+		for(int c=0; c<m1.cols; c++){
+			p[c] =abs(p1[c]-p2[c]) ;
+			//cout << (double)p[c] << endl ;
+		}
+	}
+	return img ;
+}
+
+Mat HFEF_Gausian(Mat &m, double d0){
+	static double k1=0.4, k2=0.8 ;
+	Mat f = Mat::zeros(m.rows, m.cols, CV_64FC1) ;
+	double *p ;
+	double sigma = 2*d0*d0 ;
+	for(int r=0; r<f.rows; r++){
+		p = f.ptr<double>(r) ;
+		for(int c=0; c<f.cols; c++){
+			double duv = sqrt(r*r + c*c) ;
+			double g = exp(-duv/sigma) ;
+			double h = k1 + k2*(1-g) ;
+			p[c] = h ;
+		}
+	}
+	return mulMat(m, f) ;
+}
+
+Mat reverseMat(Mat &m){
+	Mat img = Mat::zeros(m.rows, m.cols, m.type()) ;
+	uchar *p1, *p2 ;
+	for(int r=0; r<m.rows; r++){
+		p1 = img.ptr<uchar>(r) ;
+		p2 = m.ptr<uchar>(m.rows-r-1) ;
+		for(int c=0; c<m.cols; c++){
+			p1[c] = p2[m.cols-c-1] ;
+		}
+	}
+	return img ;
 }
