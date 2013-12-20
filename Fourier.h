@@ -42,8 +42,16 @@ Mat difMat(Mat &m1, Mat &m2) ;
 //Multiply
 //m1->img(uchar), m2->filter(double)
 Mat mulMat(Mat &m1, Mat &m2) ;
-//hight frequency emphasis filter
-Mat HFEF_Gausian(Mat &m, double d0=1) ;
+vector<vector<complex<double>>> mulVec(vector<vector<complex<double>>> &v1, vector<vector<complex<double>>> &v2) ;
+
+//low pass gaussian
+vector<vector<complex<double>>> LPF_Gaussian(vector<vector<complex<double>>> &m, double d0=1) ;
+Mat LPF_Gaussian(Mat &m, double d0=1) ;
+//hight pass gaussian
+Mat HPF_Gaussian(Mat &m, double d0=1) ;
+//hight frequency emphasis filter(gausian)
+vector<vector<complex<double>>> HFEF_Gaussian(vector<vector<complex<double>>> &m, double d0=1) ;
+Mat HFEF_Gaussian(Mat &m, double d0=1) ;
 
 Mat reverseMat(Mat &m) ;
 

@@ -66,10 +66,12 @@ Mat_<complex<double>> convertToCoplex(Mat &m){
 }
 
 vector< vector< complex<double>>> matToVector(Mat &m){
+	Mat md ;
+	m.convertTo(md, CV_64FC1) ;
 	vector<vector<complex<double>>> v(m.rows, vector< complex<double>>(m.cols)) ;
 	double *p ;
 	for(int r=0; r<m.rows; r++){
-		p = m.ptr<double>(r) ;
+		p = md.ptr<double>(r) ;
 		for(int c=0; c<m.cols; c++){
 			v[r][c] = complex<double>(p[c], 0) ;
 			//v[r][c] = 0 ;
@@ -136,7 +138,7 @@ bitset<16> reverseBit(bitset<16> &b){
 vector<complex<double>> FFT_1D(vector<complex<double>> &m){
 	//vector<complex<double>> v = rearrange(m) ;
 	vector<complex<double>> f(m) ;
-	vector<complex<double>> tmp(f.size()) ;
+	//vector<complex<double>> tmp(f.size()) ;
 	for(int n=2; n<=f.size(); n=n<<1){
 		//vector<complex<double>> tmp(v.size()) ;
 		int nGroup = f.size()/n ;
@@ -146,12 +148,16 @@ vector<complex<double>> FFT_1D(vector<complex<double>> &m){
 				int u = index*n + j ;
 				double angle = CV_PI*j/k ;
 				complex<double> w(cos(angle), -sin(angle)) ;
-				tmp[u] = f[u] + f[u+k]*w ;
-				tmp[u+k] = f[u] - f[u+k]*w ;
+				complex<double> even = f[u] ;
+				complex<double> odd = f[u+k]*w ;
+				f[u] = even+odd ;
+				f[u+k] = even-odd ;
+				//tmp[u] = f[u] + f[u+k]*w ;
+				//tmp[u+k] = f[u] - f[u+k]*w ;
 				//cout << u << ", " << u+k << endl ;
 			}
 		}
-		f = tmp ;
+		//f = tmp ;
 	}
 	return f ;
 }
@@ -219,6 +225,7 @@ vector<vector<complex<double>>> FFT_2D(vector<vector<complex<double>>> &m){
 		f[r] = FFT_1D(f[r]) ;
 	}
 	vector<vector<complex<double>>> fr(f) ;
+	
 	//cols
 	//rearrange
 	for(int i=0; i<m.size(); i++){
@@ -236,27 +243,12 @@ vector<vector<complex<double>>> FFT_2D(vector<vector<complex<double>>> &m){
 		for(int i=0; i<m.size(); i++)
 			f[i][c] = col[i] ;
 	}
+	
 	return f ;
 }
 
 vector<vector<complex<double>>> IFFT_2D(vector<vector<complex<double>>> &m){
-	vector<vector<complex<double>>> f(m) ;
-	//rows
-	for(int r=0; r<m.size(); r++){
-		f[r] = IFFT_1D(m[r]) ;
-	}
-	//cols
-	for(int c=0; c<m[0].size(); c++){
-		vector<complex<double>> col(m.size()) ;
-		//get col vector
-		for(int i=0; i<m.size(); i++)
-			col[i] = f[i][c] ;
-		col = IFFT_1D(col) ;
-		//set col vector
-		for(int i=0; i<m.size(); i++)
-			f[i][c] = col[i] ;
-	}
-	return f ;
+	return FFT_2D(m) ;
 }
 
 bool mCmp(int a, int b){
@@ -321,11 +313,22 @@ Mat mulMat(Mat &m1, Mat &m2){
 		p1 = m1.ptr<uchar>(r) ;
 		p2 = m2.ptr<double>(r) ;
 		for(int c=0; c<m1.cols; c++){
-			p[c] = (p1[c]/255 * p2[c])*255 ;
+			//p[c] = (p1[c]/255 * p2[c])*255 ;
+			p[c] = p1[c] * p2[c] ;
 			//cout << (double)p[c] << endl ;
 		}
 	}
 	return img ;
+}
+
+vector<vector<complex<double>>> mulVec(vector<vector<complex<double>>> &v1, vector<vector<complex<double>>> &v2){
+	vector<vector<complex<double>>> v = v1 ;
+	for(int r=0; r<v1.size(); r++){
+		for(int c=0; c<v1[0].size(); c++){
+			v[r][c] = v1[r][c]*v2[r][c] ;
+		}
+	}
+	return v ;
 }
 
 Mat difMat(Mat &m1, Mat &m2){
@@ -343,20 +346,95 @@ Mat difMat(Mat &m1, Mat &m2){
 	return img ;
 }
 
-Mat HFEF_Gausian(Mat &m, double d0){
-	static double k1=0.4, k2=0.8 ;
+vector<vector<complex<double>>> LPF_Gaussian(vector<vector<complex<double>>> &m, double d0){
+	vector<vector<complex<double>>> f(m.size(), vector<complex<double>>(m[0].size(), complex<double>(0, 0))) ;
+	double sigma = 2*d0*d0 ;
+	int cr = m.size()/2 ;
+	int cc = m[0].size()/2 ;
+	for(int r=0; r<f.size(); r++){
+		for(int c=0; c<f[0].size(); c++){
+			double duv = sqrt((r-cr)*(r-cr) + (c-cc)*(c-cc)) ;
+			double g = exp(-duv/sigma) ;
+			//double h = 1-g ;
+			f[r][c] = g ;
+		}
+	}
+	return mulVec(m, f) ;
+}
+
+Mat LPF_Gaussian(Mat &m, double d0){
 	Mat f = Mat::zeros(m.rows, m.cols, CV_64FC1) ;
 	double *p ;
 	double sigma = 2*d0*d0 ;
+	int cr = m.rows/2 ;
+	int cc = m.cols/2 ;
 	for(int r=0; r<f.rows; r++){
 		p = f.ptr<double>(r) ;
 		for(int c=0; c<f.cols; c++){
-			double duv = sqrt(r*r + c*c) ;
+			double duv = sqrt((r-cr)*(r-cr) + (c-cc)*(c-cc)) ;
+			double g = exp(-duv/sigma) ;
+			//double h = 1-g ;
+			p[c] = g ;
+		}
+	}
+	//cvShowImage("filter", &IplImage(f)) ;
+	return mulMat(m, f) ;
+}
+
+Mat HPF_Gaussian(Mat &m, double d0){
+	Mat f = Mat::zeros(m.rows, m.cols, CV_64FC1) ;
+	double *p ;
+	double sigma = 2*d0*d0 ;
+	int cr = m.rows/2 ;
+	int cc = m.cols/2 ;
+	for(int r=0; r<f.rows; r++){
+		p = f.ptr<double>(r) ;
+		for(int c=0; c<f.cols; c++){
+			double duv = sqrt((r-cr)*(r-cr) + (c-cc)*(c-cc)) ;
+			double g = exp(-duv/sigma) ;
+			double h = 1-g ;
+			p[c] = h ;
+		}
+	}
+	//cvShowImage("filter", &IplImage(f)) ;
+	return mulMat(m, f) ;
+}
+
+vector<vector<complex<double>>> HFEF_Gaussian(vector<vector<complex<double>>> &m, double d0){
+	static double k1=0.5, k2=0.75 ;
+	vector<vector<complex<double>>> f(m.size(), vector<complex<double>>(m[0].size(), complex<double>(0, 0))) ;
+	double sigma = 2*d0*d0 ;
+	int cr = m.size()/2 ;
+	int cc = m[0].size()/2 ;
+	for(int r=0; r<f.size(); r++){
+		for(int c=0; c<f[0].size(); c++){
+			double duv = sqrt((r-cr)*(r-cr) + (c-cc)*(c-cc)) ;
+			double g = exp(-duv/sigma) ;
+			double h = 1-g ;
+			f[r][c] = k1 + k2*h ;
+			//f[r][c] = complex<double>(k1 + k2*h, 0) ;
+		}
+	}
+	return mulVec(m, f) ;
+}
+
+Mat HFEF_Gaussian(Mat &m, double d0){
+	static double k1=0.5, k2=0.75 ;
+	Mat f = Mat::zeros(m.rows, m.cols, CV_64FC1) ;
+	double *p ;
+	double sigma = 2*d0*d0 ;
+	int cr = m.rows/2 ;
+	int cc = m.cols/2 ;
+	for(int r=0; r<f.rows; r++){
+		p = f.ptr<double>(r) ;
+		for(int c=0; c<f.cols; c++){
+			double duv = sqrt((r-cr)*(r-cr) + (c-cc)*(c-cc)) ;
 			double g = exp(-duv/sigma) ;
 			double h = k1 + k2*(1-g) ;
 			p[c] = h ;
 		}
 	}
+	//cvShowImage("filter", &IplImage(f)) ;
 	return mulMat(m, f) ;
 }
 
