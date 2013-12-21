@@ -22,6 +22,7 @@ Mat zeroPadding(Mat &m, int type=0) ;
 Mat_<complex<double>> convertToCoplex(Mat &m) ;
 vector< vector< complex<double>>> matToVector(Mat &m) ;
 Mat vectorToMat(vector<vector<complex<double>>> &v) ;
+Mat vectorToMat_powerSpec(vector<vector<complex<double>>> &v) ;
 Mat vectorToMat_enhanced(vector<vector<complex<double>>> &v) ;
 Mat vectorToMat_real(vector<vector<complex<double>>> &v) ;
 

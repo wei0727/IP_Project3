@@ -93,11 +93,36 @@ Mat vectorToMat(vector<vector<complex<double>>> &v){
 			pmax = max(p, pmax) ;
 		}
 	}
+	//cout << pmin << "\t" << pmax << endl ;
+	for(int r=0; r<m.rows; r++){
+		p = m.ptr<uchar>(r) ;
+		for(int c=0; c<m.cols; c++){
+			//p[c] = abs(v[r][c]) ;
+			p[c] = ((abs(v[r][c])-pmin)/(pmax-pmin))*255 ;
+			//p[c] = abs(v[r][c])-pmin ;
+		}
+	}
+	return m ;
+}
+
+Mat vectorToMat_powerSpec(vector<vector<complex<double>>> &v){
+	Mat m = Mat::zeros(v[0].size(), v.size(), CV_8UC1) ;
+	uchar *p ;
+	double pmin=norm(v[0][0]), pmax=norm(v[0][0]) ;
+	for(int r=0; r<m.rows; r++){
+		//p = m.ptr<double>(r) ;
+		for(int c=0; c<m.cols; c++){
+			//p[c] = abs(v[r][c]) ;
+			double p = norm(v[r][c]) ;
+			pmin = min(p, pmin) ;
+			pmax = max(p, pmax) ;
+		}
+	}
 	//cout << pmin << pmax << endl ;
 	for(int r=0; r<m.rows; r++){
 		p = m.ptr<uchar>(r) ;
 		for(int c=0; c<m.cols; c++){
-			p[c] = ((abs(v[r][c])-pmin)/(pmax-pmin))*255 ;
+			p[c] = ((norm(v[r][c])-pmin)/(pmax-pmin))*255 ;
 			//p[c] = abs(v[r][c])-pmin ;
 		}
 	}
@@ -107,12 +132,12 @@ Mat vectorToMat(vector<vector<complex<double>>> &v){
 Mat vectorToMat_real(vector<vector<complex<double>>> &v){
 	Mat m = Mat::zeros(v[0].size(), v.size(), CV_8UC1) ;
 	uchar *p ;
-	double pmin=abs(v[0][0]), pmax=abs(v[0][0]) ;
+	double pmin=v[0][0].real(), pmax=v[0][0].real() ;
 	for(int r=0; r<m.rows; r++){
 		//p = m.ptr<double>(r) ;
 		for(int c=0; c<m.cols; c++){
 			//p[c] = abs(v[r][c]) ;
-			double p = v[r][c].real() ;
+			double p = v[r][c].real()*((r+c)&1==1? -1: 1) ;
 			pmin = min(p, pmin) ;
 			pmax = max(p, pmax) ;
 		}
@@ -121,9 +146,10 @@ Mat vectorToMat_real(vector<vector<complex<double>>> &v){
 	for(int r=0; r<m.rows; r++){
 		p = m.ptr<uchar>(r) ;
 		for(int c=0; c<m.cols; c++){
-			//p[c] = v[r][c].real() ;
-			p[c] = ((v[r][c].real()-pmin)/(pmax-pmin)) ;
-			//p[c] *= ((r+c)&1==1? -1: 1) ;
+			p[c] = v[r][c].real() ;
+			//p[c] = ((v[r][c].real()-pmin)/(pmax-pmin)) ;
+			p[c] *= ((r+c)&1==1? -1: 1) ;
+			//p[c] = ((p[c]-pmin)/(pmax-pmin))*255 ;
 		}
 	}
 	return m ;
@@ -142,7 +168,7 @@ Mat vectorToMat_enhanced(vector<vector<complex<double>>> &v){
 			pmax = max(p, pmax) ;
 		}
 	}
-	//cout << pmin << pmax << endl ;
+	//cout << pmin << "\t" << pmax << endl ;
 	for(int r=0; r<m.rows; r++){
 		p = m.ptr<uchar>(r) ;
 		for(int c=0; c<m.cols; c++){
@@ -524,5 +550,7 @@ vector<vector<complex<double>>> Butterworth_reject(vector<vector<complex<double>
 			//f[r][c] = complex<double>(k1 + k2*h, 0) ;
 		}
 	}
+	//Mat mf = vectorToMat(f) ;
+	//cvShowImage("butterworth reject", &IplImage(mf)) ;
 	return mulVec(m, f) ;
 }
