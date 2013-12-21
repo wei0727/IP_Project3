@@ -136,11 +136,28 @@ void FFT_ButterworthReject(string name="Fig0516(a)(applo17_boulder_noisy).tif"){
 	cvWaitKey(0) ;
 }
 
+void passTest(complex<double> **c){
+	for(int i=0; i<10; i++){
+		for(int j=0; j<10; j++){
+			cout << c[i][j] << endl ;
+		}
+	}
+}
+
 int main(){
 	setTable() ;
+	//complex<double> **a ;
+	//a = new complex<double>*[10] ;
+	//for(int i=0; i<10; i++){
+	//	a[i] = new complex<double>[10] ;
+	//	for(int j=0; j<10; j++){
+	//		a[i][j] = complex<double>(i, j) ;
+	//	}
+	//}
+	//passTest(a) ;
 	//test() ;
 	//FFT_Spectrum() ;
 	//FFT_HFEF_HIST() ;
-	FFT_ButterworthReject() ;
+	//FFT_ButterworthReject() ;
 	return 0 ;
 }

@@ -582,3 +582,28 @@ vector<vector<complex<double>>> Butterworth_reject(vector<vector<complex<double>
 	//cvShowImage("butterworth reject", &IplImage(mf)) ;
 	return mulVec(m, f) ;
 }
+
+vector<vector<complex<double>>> specResize(vector<vector<complex<double>>> &m, int rows, int cols){
+	Mat real(m.size(), m[0].size(), CV_64FC1), imag(m.size(), m[0].size(), CV_64FC1) ;
+	double *rp, *ip ;
+	for(int r=0; r<real.rows; r++){
+		rp = real.ptr<double>(r) ;
+		ip = imag.ptr<double>(r) ;
+		for(int c=0; c<real.cols; c++){
+			rp[c] = m[r][c].real() ;
+			ip[c] = m[r][c].imag() ;
+		}
+	}
+	Mat realResize, imagResize ;
+	resize(real, realResize, cvSize(cols, rows)) ;
+	resize(imag, imagResize, cvSize(cols, rows)) ;
+	vector<vector<complex<double>>> v(rows, vector<complex<double>>(cols)) ;
+	for(int r=0; r<realResize.rows; r++){
+		rp = realResize.ptr<double>(r) ;
+		ip = imagResize.ptr<double>(r) ;
+		for(int c=0; c<realResize.cols; c++){
+			v[r][c] = complex<double>(rp[c], ip[c]) ;
+		}
+	}
+	return v ;
+}

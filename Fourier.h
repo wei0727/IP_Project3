@@ -61,4 +61,6 @@ vector<vector<complex<double>>> Butterworth_reject(vector<vector<complex<double>
 
 Mat reverseMat(Mat &m) ;
 
+vector<vector<complex<double>>> specResize(vector<vector<complex<double>>> &m, int rows, int cols) ;
+
 
