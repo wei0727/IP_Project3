@@ -4,6 +4,9 @@
 
 void test(){
 	clock_t t1, t2 ;
+	complex<double> c(10, 6) ;
+	c /= 2 ;
+	//cout << c << endl ;
 	//cout << (t2-t1)/(double)CLOCKS_PER_SEC << endl ;
 	Mat t = (Mat_<double>(8, 8) << 0, 0, 0, 0, 0, 0, 0, 0,
 								  0, 0, 70, 80, 90, 0, 0, 0,
@@ -13,50 +16,34 @@ void test(){
 								  0, 0, 0, 0, 0, 0, 0, 0,
 								  0, 0, 0, 0, 0, 0, 0, 0,
 								  0, 0, 0, 0, 0, 0, 0, 0) ;
+	//Mat t = (Mat_<double>(4, 4) << 0, 0, 0, 0,
+	//							   1, 2, 3, 4,
+	//							   2, 3, 4, 5,
+	//							   3, 4, 5, 6) ;
 	vector<vector<complex<double>>> vImg = matToVector(t) ;
 	vector<vector<complex<double>>> vFFT = FFT_2D(vImg) ;
 	vector<vector<complex<double>>> vIFFT = IFFT_2D(vFFT) ;
-	vector<vector<complex<double>>> vt = vImg ;
-	for(int r=0; r<8; r++){
-		for(int c=0; c<8; c++){
-			double d = vIFFT[r][c].real() ;
-			d *= ((r+c)&1==1? -1: 1) ;
-			d *= 64 ;
-			//cout << abs(vIFFT[r][c]) << "  " ;
-			cout << vImg[r][c].real() << "\t" ;
-		}
+	cout << fixed ;
+	for(int r=0; r<vFFT.size(); r++){
+		for(int c=0; c<vFFT[0].size(); c++)
+			cout << vIFFT[r][c] << "\t" ;
 		cout << endl ;
 	}
-	cout << endl ;
-	for(int r=0; r<8; r++){
-		for(int c=0; c<8; c++){
-			double d = vIFFT[r][c].real() ;
-			d *= ((r+c)&1==1? -1: 1) ;
-			//d *= 64 ;
-			//d = vIFFT[r][c].real() ;
-			d = abs(vIFFT[r][c]) ;
-			vt[7-r][7-c] = d ;
-			if(d<0.01)
-				d = 0 ;
-			//cout << abs(vIFFT[r][c]) << "  " ;
-			cout << d << "\t" ;
-		}
-		cout << endl ;
-	}
-	cout << endl ;
-	for(int r=0; r<8; r++){
-		for(int c=0; c<8; c++){
-			double d = vt[r][c].real() ; 
-			d = abs(vt[r][c]) ;
-			if(d<0.01)
-				d = 0 ;
-			//cout << abs(vIFFT[r][c]) << "  " ;
-			cout << d << "\t" ;
-		}
-		cout << endl ;
-	}
-	
-	
+	//vector<complex<double>> v ;
+	//v.push_back(complex<double>(1, 0)) ;
+	//v.push_back(complex<double>(2, 0)) ;
+	//v.push_back(complex<double>(3, 0)) ;
+	//v.push_back(complex<double>(4, 0)) ;
+	//v = FFT_1D(v) ;
+	//v[0] /= 4 ;
+	//v[1] /= 4 ;
+	//v[2] /= 4 ;
+	//v[3] /= 4 ;
+	//cout << v[0] << endl ;
+	//cout << v[1] << endl ;
+	//cout << v[2] << endl ;
+	//cout << v[3] << endl ;
+	//
 }
 
 void FFT_Spectrum(string imgName="Fig0424(a)(rectangle).tif"){
@@ -70,6 +57,8 @@ void FFT_Spectrum(string imgName="Fig0424(a)(rectangle).tif"){
 	Mat spectrum_enhanced = vectorToMat_enhanced(vFFT) ;
 	cvShowImage("enhanced spectrum", &IplImage(spectrum_enhanced)) ;
 	cvShowImage("spectrum", &IplImage(spectrum)) ;
+	cvSaveImage("1_Spectrum.jpg", &IplImage(spectrum)) ;
+	cvSaveImage("1_EnhancedSpectrum.jpg", &IplImage(spectrum_enhanced)) ;
 	cvWaitKey(0) ;
 }
 
@@ -81,14 +70,14 @@ void FFT_HFEF_HIST(string imgName="Fig0459(a)(orig_chest_xray).tif"){
 	//m = zeroPadding(m, 0) ;
 	vector<vector<complex<double>>> vImg = matToVector(m) ;
 	vector<vector<complex<double>>> vFFT = FFT_2D(vImg) ;
+	Mat spec = vectorToMat(vFFT) ;
 	vector<vector<complex<double>>> vHFFT = vFFT ;
 	vFFT = HFEF_Gaussian(vFFT, 40) ;
 	vHFFT = HPF_Gaussian(vHFFT, 40) ;
 	vector<vector<complex<double>>> vIFFT = IFFT_2D(vFFT) ;
 	vector<vector<complex<double>>> vIHFFT = IFFT_2D(vHFFT) ;
-	Mat ifImg = vectorToMat(vIFFT) ;
-	//Mat ifImg = vectorToMat_real(vIFFT) ;
-	Mat hpfImg = vectorToMat(vIHFFT) ;
+	Mat ifImg = vectorToMat_real(vIFFT) ;
+	Mat hpfImg = vectorToMat_real(vIHFFT) ;
 	Mat hpfResult = hpfImg(cvRect(0, 0, img.cols, img.rows)) ;
 	Mat result = ifImg(cvRect(0, 0, img.cols, img.rows)) ;
 	Mat HFEFMat ;
@@ -99,6 +88,11 @@ void FFT_HFEF_HIST(string imgName="Fig0459(a)(orig_chest_xray).tif"){
 	cvShowImage("c", &IplImage(HFEFMat)) ;
 	cvShowImage("d", &IplImage(result)) ;
 	cvShowImage("Only histogram equalization", &IplImage(img)) ;
+	//cvShowImage("spec", &IplImage(spec)) ;
+	cvSaveImage("2_b.jpg", &IplImage(hpfResult)) ;
+	cvSaveImage("2_c.jpg", &IplImage(HFEFMat)) ;
+	cvSaveImage("2_d.jpg", &IplImage(result)) ;
+	cvSaveImage("2_equalization.jpg", &IplImage(img)) ;
 	cvWaitKey(0) ;
 }
 
@@ -131,21 +125,22 @@ void FFT_ButterworthReject(string name="Fig0516(a)(applo17_boulder_noisy).tif"){
 	resize(spectrum_filtered, specFilterdResize, cvSize(img.cols, img.rows)) ;
 	vector<vector<complex<double>>> vIFFT = IFFT_2D(vFFT) ;
 	//vector<vector<complex<double>>> vIFFT = FFT_2D(vFFT) ;
-	Mat ifImg = vectorToMat(vIFFT) ;
+	Mat ifImg = vectorToMat_real(vIFFT) ;
 	Mat result = ifImg(cvRect(0, 0, img.cols, img.rows)) ;
 	cvShowImage("b", &IplImage(specResize)) ;
 	cvShowImage("spectrum_filtered", &IplImage(specFilterdResize)) ;
 	cvShowImage("d", &IplImage(result)) ;
-	//cvSaveImage("butter.jpg", &IplImage(result)) ;
-	//cvSaveImage("spectrum.jpg", &IplImage(specResize)) ;
+	cvSaveImage("3_butter.jpg", &IplImage(result)) ;
+	cvSaveImage("3_spectrum.jpg", &IplImage(specResize)) ;
+	cvSaveImage("3_spectrum_filtered.jpg", &IplImage(specFilterdResize)) ;
 	cvWaitKey(0) ;
 }
 
 int main(){
 	setTable() ;
-	test() ;
+	//test() ;
 	//FFT_Spectrum() ;
 	//FFT_HFEF_HIST() ;
-	//FFT_ButterworthReject() ;
+	FFT_ButterworthReject() ;
 	return 0 ;
 }

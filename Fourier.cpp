@@ -146,10 +146,8 @@ Mat vectorToMat_real(vector<vector<complex<double>>> &v){
 	for(int r=0; r<m.rows; r++){
 		p = m.ptr<uchar>(r) ;
 		for(int c=0; c<m.cols; c++){
-			p[c] = v[r][c].real() ;
 			//p[c] = ((v[r][c].real()-pmin)/(pmax-pmin)) ;
-			p[c] *= ((r+c)&1==1? -1: 1) ;
-			//p[c] = ((p[c]-pmin)/(pmax-pmin))*255 ;
+			p[c] = ((v[r][c].real()*((r+c)&1==1? -1: 1)-pmin)/(pmax-pmin))*255 ;
 		}
 	}
 	return m ;
@@ -268,7 +266,11 @@ vector<vector<complex<double>>> FFT_2D(vector<vector<complex<double>>> &m){
 		tmp[i] = i ;
 	}
 	sort(tmp.begin(), tmp.end(), mCmp) ;
-	for(int i=0; i<m.size(); i++){
+	//cout << "bit reversal" << endl ;
+	//for(int i=0; i<m.size(); i++){
+	//	cout << tmp[i] << endl ;
+	//}
+	for(int i=0; i<m[0].size(); i++){
 		for(int r=0; r<m.size(); r++)
 			f[r][i] = m[r][tmp[i]] ;
 	}
@@ -277,25 +279,46 @@ vector<vector<complex<double>>> FFT_2D(vector<vector<complex<double>>> &m){
 		f[r] = FFT_1D(f[r]) ;
 	}
 	vector<vector<complex<double>>> fr(f) ;
-	
+	//cout << "row" << endl ;
+	//for(int r=0; r<m.size(); r++){
+	//	for(int c=0; c<m[0].size(); c++){
+	//		cout << fr[r][c] << "\t" ;
+	//	}
+	//	cout << endl ;
+	//}
 	//cols
 	//rearrange
+	//cout << "col rearrange" << endl ;
 	for(int i=0; i<m.size(); i++){
-		for(int c=0; c<m[0].size(); c++)
+		for(int c=0; c<m[0].size(); c++){
 			f[i][c] = fr[tmp[i]][c] ;
+			//cout << f[i][c] << "\t" ;
+		}
+		//cout << endl ;
 	}
 	//FFT
+	//cout << "col" << endl ;
 	for(int c=0; c<m[0].size(); c++){
 		vector<complex<double>> col(m.size()) ;
 		//get col vector
-		for(int i=0; i<m.size(); i++)
+		for(int i=0; i<m.size(); i++){
 			col[i] = f[i][c] ;
+			//cout << col[i] << "\t" ;
+		}
+		//cout << endl ;
 		col = FFT_1D(col) ;
 		//set col vector
-		for(int i=0; i<m.size(); i++)
+		for(int i=0; i<m.size(); i++){
 			f[i][c] = col[i] ;
+			//cout << f[i][c] << "\t" ;
+		}
+		//cout << endl ;
 	}
-	
+	//for(int r=0; r<m.size(); r++){
+	//	for(int c=0; c<m[0].size(); c++)
+	//		cout << f[r][c] << "\t" ;
+	//	cout << endl ;
+	//}
 	return f ;
 }
 
@@ -313,6 +336,11 @@ vector<vector<complex<double>>> IFFT_2D(vector<vector<complex<double>>> &m){
 			v[r][c] /= mn ;
 		}
 	}
+	//for(int r=0; r<v.size(); r++){
+	//	for(int c=0; c<v[0].size(); c++){
+	//		v[r][c] = conj(v[r][c]) ;
+	//	}
+	//}
 	return v ;
 }
 
@@ -322,7 +350,7 @@ bool mCmp(int a, int b){
 	//ba = reverseBit(ba) ;
 	//bb = reverseBit(bb) ;
 	//return ba.to_ulong() < bb.to_ulong() ;
-	return bitReversalTable[a] > bitReversalTable[b] ;
+	return bitReversalTable[a] < bitReversalTable[b] ;
 }
 
 vector<complex<double>> rearrange(vector<complex<double>> &m){
