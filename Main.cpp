@@ -4,31 +4,19 @@
 
 void test(){
 	clock_t t1, t2 ;
-	complex<double> c(10, 6) ;
-	c /= 2 ;
-	//cout << c << endl ;
-	//cout << (t2-t1)/(double)CLOCKS_PER_SEC << endl ;
-	Mat t = (Mat_<double>(8, 8) << 0, 0, 0, 0, 0, 0, 0, 0,
-								  0, 0, 70, 80, 90, 0, 0, 0,
-								  0, 0, 90, 100, 110, 0, 0, 0,
-								  0, 0, 110, 120, 130, 0, 0, 0,
-								  0, 0, 130, 140, 150, 0, 0, 0,
-								  0, 0, 0, 0, 0, 0, 0, 0,
-								  0, 0, 0, 0, 0, 0, 0, 0,
-								  0, 0, 0, 0, 0, 0, 0, 0) ;
 	//Mat t = (Mat_<double>(4, 4) << 0, 0, 0, 0,
 	//							   1, 2, 3, 4,
 	//							   2, 3, 4, 5,
 	//							   3, 4, 5, 6) ;
-	vector<vector<complex<double>>> vImg = matToVector(t) ;
-	vector<vector<complex<double>>> vFFT = FFT_2D(vImg) ;
-	vector<vector<complex<double>>> vIFFT = IFFT_2D(vFFT) ;
-	cout << fixed ;
-	for(int r=0; r<vFFT.size(); r++){
-		for(int c=0; c<vFFT[0].size(); c++)
-			cout << vIFFT[r][c] << "\t" ;
-		cout << endl ;
-	}
+	//vector<vector<complex<double>>> vImg = matToVector(t) ;
+	//vector<vector<complex<double>>> vFFT = FFT_2D(vImg) ;
+	//vector<vector<complex<double>>> vIFFT = IFFT_2D(vFFT) ;
+	//cout << fixed ;
+	//for(int r=0; r<vFFT.size(); r++){
+	//	for(int c=0; c<vFFT[0].size(); c++)
+	//		cout << vIFFT[r][c] << "\t" ;
+	//	cout << endl ;
+	//}
 	//vector<complex<double>> v ;
 	//v.push_back(complex<double>(1, 0)) ;
 	//v.push_back(complex<double>(2, 0)) ;
@@ -44,6 +32,19 @@ void test(){
 	//cout << v[2] << endl ;
 	//cout << v[3] << endl ;
 	//
+	//IplImage *iplimg = cvLoadImage("Fig0516(a)(applo17_boulder_noisy).tif", CV_LOAD_IMAGE_GRAYSCALE) ;
+	//Mat img(iplimg) ;
+	//Mat m = centering(img) ;
+	//m = zeroPadding(m, 0) ;
+	//m = zeroPadding(m, 1) ;
+	//vector<vector<complex<double>>> vImg = matToVector(m) ;
+	//vector<vector<complex<double>>> vFFT = FFT_2D(vImg) ;
+	//vector<vector<complex<double>>> vFFT_resize = specResize(vFFT, img.rows, img.cols) ;
+	//vector<vector<complex<double>>> vFFT_resize2 = specResize(vFFT_resize, m.rows, m.cols) ;
+	//vector<vector<complex<double>>> vIFFT = IFFT_2D(vFFT_resize2) ;
+	//Mat result = vectorToMat(vIFFT) ;
+	//cvShowImage("d", &IplImage(result)) ;
+	//cvWaitKey(0) ;
 }
 
 void FFT_Spectrum(string imgName="Fig0424(a)(rectangle).tif"){
@@ -104,6 +105,7 @@ void FFT_ButterworthReject(string name="Fig0516(a)(applo17_boulder_noisy).tif"){
 	m = zeroPadding(m, 1) ;
 	vector<vector<complex<double>>> vImg = matToVector(m) ;
 	vector<vector<complex<double>>> vFFT = FFT_2D(vImg) ;
+	vector<vector<complex<double>>> vFFT_noise = FFT_2D(vImg) ;
 	Mat spectrum = vectorToMat(vFFT) ;
 	Mat specResize(img.rows, img.cols, img.type()) ;
 	resize(spectrum, specResize, cvSize(img.cols, img.rows)) ;
@@ -117,47 +119,43 @@ void FFT_ButterworthReject(string name="Fig0516(a)(applo17_boulder_noisy).tif"){
 	//			cout << r-cr << ", " << c-cc << ": " << sqrt((r-cr)*(r-cr) + (c-cc)*(c-cc)) << endl ;
 	//	}
 	//}
-	vFFT = Butterworth_reject(vFFT, 766, 8, 5) ;
-	vFFT = Butterworth_reject(vFFT, 676, 8, 5) ;
-	vFFT = Butterworth_reject(vFFT, 575, 8, 5) ;
+
+	//vFFT = Butterworth_reject(vFFT, 766, 8, 5) ;
+	//vFFT = Butterworth_reject(vFFT, 676, 8, 5) ;
+	//vFFT = Butterworth_reject(vFFT, 575, 8, 5) ;
+	//vFFT_noise = Butterworth_pass(vFFT_noise, 766, 8, 5) ;
+	//vFFT_noise = Butterworth_pass(vFFT_noise, 676, 8, 5) ;
+	//vFFT_noise = Butterworth_pass(vFFT_noise, 575, 8, 5) ;
+
+	vFFT = Butterworth_reject_byimg(vFFT, "Fig0516(c)(BW_banreject_order4).tif") ;
+	vFFT_noise = Butterworth_pass_byimg(vFFT_noise, "Fig0516(c)(BW_banreject_order4).tif") ;
+
 	Mat spectrum_filtered = vectorToMat(vFFT) ;
 	Mat specFilterdResize(img.rows, img.cols, img.type()) ;
 	resize(spectrum_filtered, specFilterdResize, cvSize(img.cols, img.rows)) ;
 	vector<vector<complex<double>>> vIFFT = IFFT_2D(vFFT) ;
+	vector<vector<complex<double>>> vIFFT_noise = IFFT_2D(vFFT_noise) ;
 	//vector<vector<complex<double>>> vIFFT = FFT_2D(vFFT) ;
 	Mat ifImg = vectorToMat_real(vIFFT) ;
 	Mat result = ifImg(cvRect(0, 0, img.cols, img.rows)) ;
+	Mat noise = vectorToMat(vIFFT_noise) ;
+	Mat result_noise = noise(cvRect(0, 0, img.cols, img.rows)) ;
 	cvShowImage("b", &IplImage(specResize)) ;
 	cvShowImage("spectrum_filtered", &IplImage(specFilterdResize)) ;
 	cvShowImage("d", &IplImage(result)) ;
+	cvShowImage("noise", &IplImage(result_noise)) ;
 	cvSaveImage("3_butter.jpg", &IplImage(result)) ;
 	cvSaveImage("3_spectrum.jpg", &IplImage(specResize)) ;
 	cvSaveImage("3_spectrum_filtered.jpg", &IplImage(specFilterdResize)) ;
+	cvSaveImage("3_noise.jpg", &IplImage(result_noise)) ;
 	cvWaitKey(0) ;
-}
-
-void passTest(complex<double> **c){
-	for(int i=0; i<10; i++){
-		for(int j=0; j<10; j++){
-			cout << c[i][j] << endl ;
-		}
-	}
 }
 
 int main(){
 	setTable() ;
-	//complex<double> **a ;
-	//a = new complex<double>*[10] ;
-	//for(int i=0; i<10; i++){
-	//	a[i] = new complex<double>[10] ;
-	//	for(int j=0; j<10; j++){
-	//		a[i][j] = complex<double>(i, j) ;
-	//	}
-	//}
-	//passTest(a) ;
 	//test() ;
 	//FFT_Spectrum() ;
 	//FFT_HFEF_HIST() ;
-	//FFT_ButterworthReject() ;
+	FFT_ButterworthReject() ;
 	return 0 ;
 }

@@ -49,22 +49,6 @@ Mat zeroPadding(Mat &m, int type){
 	return img ;
 }
 
-Mat_<complex<double>> convertToCoplex(Mat &m){
-	Mat_<complex<double>> cm(m.rows, m.cols) ;
-	double *p ;
-	complex<double> *cp ;
-	for(int r=0; r<m.rows; r++){
-		p = m.ptr<double>(r) ;
-		cp = cm.ptr<complex<double>>(r) ;
-		for(int c=0; c<m.cols; c++){
-			cp[c] = complex<double>(p[c], 0) ;
-			//v[r][c] = complex<double>(p[c], 0) ;
-			//v[r][c] = 0 ;
-		}
-	}
-	return cm ;
-}
-
 vector< vector< complex<double>>> matToVector(Mat &m){
 	Mat md ;
 	m.convertTo(md, CV_64FC1) ;
@@ -233,30 +217,6 @@ vector< complex<double>> IFFT_1D(vector< complex<double>> &m){
 	return f ;
 }
 
-//Mat_<complex<double>> FFT_1D(Mat_<complex<double>> &m){
-//	Mat_<complex<double>> v = rearrange(m) ;
-//	Mat_<complex<double>> f(v) ;
-//	for(int n=2; n!=v.cols; n=n<<1){
-//		Mat_<complex<double>> tmp(1, f.cols) ;
-//		complex<double> *tmpPtr = tmp.ptr<complex<double>>(0) ;
-//		complex<double> *fPtr = f.ptr<complex<double>>(0) ;
-//		int nGroup = v.cols/n ;
-//		int k = n >> 1 ;
-//		for(int index=0; index<nGroup; index++){
-//			for(int j=0; j<k; j++){
-//				int u = index*n + j ;
-//				double angle = CV_PI*j/k ;
-//				complex<double> w(cos(angle), -sin(angle)) ;
-//				tmpPtr[u] = fPtr[u] + fPtr[u+k]*w ;
-//				tmpPtr[u+k] = fPtr[u] - fPtr[u+k]*w ;
-//			}
-//		}
-//		//f = tmp ;
-//		tmp.copyTo(f) ;
-//	}
-//	return f ;
-//}
-
 vector<vector<complex<double>>> FFT_2D(vector<vector<complex<double>>> &m){
 	vector<vector<complex<double>>> f(m) ;
 	//rows
@@ -266,10 +226,6 @@ vector<vector<complex<double>>> FFT_2D(vector<vector<complex<double>>> &m){
 		tmp[i] = i ;
 	}
 	sort(tmp.begin(), tmp.end(), mCmp) ;
-	//cout << "bit reversal" << endl ;
-	//for(int i=0; i<m.size(); i++){
-	//	cout << tmp[i] << endl ;
-	//}
 	for(int i=0; i<m[0].size(); i++){
 		for(int r=0; r<m.size(); r++)
 			f[r][i] = m[r][tmp[i]] ;
@@ -279,46 +235,26 @@ vector<vector<complex<double>>> FFT_2D(vector<vector<complex<double>>> &m){
 		f[r] = FFT_1D(f[r]) ;
 	}
 	vector<vector<complex<double>>> fr(f) ;
-	//cout << "row" << endl ;
-	//for(int r=0; r<m.size(); r++){
-	//	for(int c=0; c<m[0].size(); c++){
-	//		cout << fr[r][c] << "\t" ;
-	//	}
-	//	cout << endl ;
-	//}
 	//cols
 	//rearrange
-	//cout << "col rearrange" << endl ;
 	for(int i=0; i<m.size(); i++){
 		for(int c=0; c<m[0].size(); c++){
 			f[i][c] = fr[tmp[i]][c] ;
-			//cout << f[i][c] << "\t" ;
 		}
-		//cout << endl ;
 	}
 	//FFT
-	//cout << "col" << endl ;
 	for(int c=0; c<m[0].size(); c++){
 		vector<complex<double>> col(m.size()) ;
 		//get col vector
 		for(int i=0; i<m.size(); i++){
 			col[i] = f[i][c] ;
-			//cout << col[i] << "\t" ;
 		}
-		//cout << endl ;
 		col = FFT_1D(col) ;
 		//set col vector
 		for(int i=0; i<m.size(); i++){
 			f[i][c] = col[i] ;
-			//cout << f[i][c] << "\t" ;
 		}
-		//cout << endl ;
 	}
-	//for(int r=0; r<m.size(); r++){
-	//	for(int c=0; c<m[0].size(); c++)
-	//		cout << f[r][c] << "\t" ;
-	//	cout << endl ;
-	//}
 	return f ;
 }
 
@@ -336,20 +272,10 @@ vector<vector<complex<double>>> IFFT_2D(vector<vector<complex<double>>> &m){
 			v[r][c] /= mn ;
 		}
 	}
-	//for(int r=0; r<v.size(); r++){
-	//	for(int c=0; c<v[0].size(); c++){
-	//		v[r][c] = conj(v[r][c]) ;
-	//	}
-	//}
 	return v ;
 }
 
 bool mCmp(int a, int b){
-	//bitset<16> ba(a) ;
-	//bitset<16> bb(b) ;
-	//ba = reverseBit(ba) ;
-	//bb = reverseBit(bb) ;
-	//return ba.to_ulong() < bb.to_ulong() ;
 	return bitReversalTable[a] < bitReversalTable[b] ;
 }
 
@@ -364,35 +290,6 @@ vector<complex<double>> rearrange(vector<complex<double>> &m){
 		v[i] = m[tmp[i]] ;
 	}
 	return v ;
-}
-
-//Mat_<complex<double>> rearrange(Mat_<complex<double>> &m){
-//	Mat_<complex<double>> v(1, m.cols) ;
-//	complex<double> *p = v.ptr<complex<double>>(0) ;
-//	complex<double> *mp = m.ptr<complex<double>>(0) ;
-//	for(int i=0; i<m.cols; i++){
-//		bitset<32> b(i) ;
-//		b = reverseBit(b) ;
-//		int j = b.to_ulong() ;
-//		p[j] = mp[i] ;
-//	}
-//	return v ;
-//}
-
-Mat enhanceSpectrum(Mat &m){
-	Mat e = Mat::zeros(m.rows, m.cols, m.type()) ;
-	uchar *p ;
-	uchar *mp ;
-	for(int r=0; r<m.rows; r++){
-		p = e.ptr<uchar>(r) ;
-		mp = m.ptr<uchar>(r) ;
-		for(int c=0; c<m.cols; c++){
-			p[c] = log(1+mp[c]) ;
-			if(mp[c] != 0)
-				cout << (int)mp[c] << ", " << (int)p[c] << endl ;
-		}
-	}
-	return e ;
 }
 
 Mat mulMat(Mat &m1, Mat &m2){
@@ -455,44 +352,6 @@ vector<vector<complex<double>>> LPF_Gaussian(vector<vector<complex<double>>> &m,
 	return mulVec(m, f) ;
 }
 
-Mat LPF_Gaussian(Mat &m, double d0){
-	Mat f = Mat::zeros(m.rows, m.cols, CV_64FC1) ;
-	double *p ;
-	double sigma = 2*d0*d0 ;
-	int cr = m.rows/2 ;
-	int cc = m.cols/2 ;
-	for(int r=0; r<f.rows; r++){
-		p = f.ptr<double>(r) ;
-		for(int c=0; c<f.cols; c++){
-			double duv = ((r-cr)*(r-cr) + (c-cc)*(c-cc)) ;
-			double g = exp(-duv/sigma) ;
-			//double h = 1-g ;
-			p[c] = g ;
-		}
-	}
-	//cvShowImage("filter", &IplImage(f)) ;
-	return mulMat(m, f) ;
-}
-
-Mat HPF_Gaussian(Mat &m, double d0){
-	Mat f = Mat::zeros(m.rows, m.cols, CV_64FC1) ;
-	double *p ;
-	double sigma = 2*d0*d0 ;
-	int cr = m.rows/2 ;
-	int cc = m.cols/2 ;
-	for(int r=0; r<f.rows; r++){
-		p = f.ptr<double>(r) ;
-		for(int c=0; c<f.cols; c++){
-			double duv = ((r-cr)*(r-cr) + (c-cc)*(c-cc)) ;
-			double g = exp(-duv/sigma) ;
-			double h = 1-g ;
-			p[c] = h ;
-		}
-	}
-	//cvShowImage("filter", &IplImage(f)) ;
-	return mulMat(m, f) ;
-}
-
 vector<vector<complex<double>>> HPF_Gaussian(vector<vector<complex<double>>> &m, double d0){
 	vector<vector<complex<double>>> f(m.size(), vector<complex<double>>(m[0].size(), complex<double>(0, 0))) ;
 	double sigma = 2*d0*d0 ;
@@ -530,26 +389,6 @@ vector<vector<complex<double>>> HFEF_Gaussian(vector<vector<complex<double>>> &m
 	return mulVec(m, f) ;
 }
 
-Mat HFEF_Gaussian(Mat &m, double d0){
-	static double k1=0.5, k2=0.75 ;
-	Mat f = Mat::zeros(m.rows, m.cols, CV_64FC1) ;
-	double *p ;
-	double sigma = 2*d0*d0 ;
-	int cr = m.rows/2 ;
-	int cc = m.cols/2 ;
-	for(int r=0; r<f.rows; r++){
-		p = f.ptr<double>(r) ;
-		for(int c=0; c<f.cols; c++){
-			double duv = sqrt((r-cr)*(r-cr) + (c-cc)*(c-cc)) ;
-			double g = exp(-duv/sigma) ;
-			double h = k1 + k2*(1-g) ;
-			p[c] = h ;
-		}
-	}
-	//cvShowImage("filter", &IplImage(f)) ;
-	return mulMat(m, f) ;
-}
-
 Mat reverseMat(Mat &m){
 	Mat img = Mat::zeros(m.rows, m.cols, m.type()) ;
 	uchar *p1, *p2 ;
@@ -583,27 +422,56 @@ vector<vector<complex<double>>> Butterworth_reject(vector<vector<complex<double>
 	return mulVec(m, f) ;
 }
 
-vector<vector<complex<double>>> specResize(vector<vector<complex<double>>> &m, int rows, int cols){
-	Mat real(m.size(), m[0].size(), CV_64FC1), imag(m.size(), m[0].size(), CV_64FC1) ;
-	double *rp, *ip ;
-	for(int r=0; r<real.rows; r++){
-		rp = real.ptr<double>(r) ;
-		ip = imag.ptr<double>(r) ;
-		for(int c=0; c<real.cols; c++){
-			rp[c] = m[r][c].real() ;
-			ip[c] = m[r][c].imag() ;
+vector<vector<complex<double>>> Butterworth_reject_byimg(vector<vector<complex<double>>> &m, string name){
+	IplImage *img = cvLoadImage(name.c_str(), CV_LOAD_IMAGE_GRAYSCALE) ;
+	Mat mImg(img) ;
+	Mat resize_m ;
+	resize(mImg, resize_m, cvSize(m[0].size(), m.size())) ;
+	vector<vector<complex<double>>> f(m.size(), vector<complex<double>>(m[0].size(), complex<double>())) ;
+	uchar *p ;
+	for(int r=0; r<f.size(); r++){
+		p = resize_m.ptr<uchar>(r) ;
+		for(int c=0; c<f[0].size(); c++){
+			f[r][c] = complex<double>(p[c]/255.0, 0) ;
 		}
 	}
-	Mat realResize, imagResize ;
-	resize(real, realResize, cvSize(cols, rows)) ;
-	resize(imag, imagResize, cvSize(cols, rows)) ;
-	vector<vector<complex<double>>> v(rows, vector<complex<double>>(cols)) ;
-	for(int r=0; r<realResize.rows; r++){
-		rp = realResize.ptr<double>(r) ;
-		ip = imagResize.ptr<double>(r) ;
-		for(int c=0; c<realResize.cols; c++){
-			v[r][c] = complex<double>(rp[c], ip[c]) ;
+	//Mat mf = vectorToMat(f) ;
+	//cvShowImage("butterworth reject", &IplImage(mf)) ;
+	return mulVec(m, f) ;
+}
+
+vector<vector<complex<double>>> Butterworth_pass_byimg(vector<vector<complex<double>>> &m, string name){
+	IplImage *img = cvLoadImage(name.c_str(), CV_LOAD_IMAGE_GRAYSCALE) ;
+	Mat mImg(img) ;
+	Mat resize_m ;
+	resize(mImg, resize_m, cvSize(m[0].size(), m.size())) ;
+	vector<vector<complex<double>>> f(m.size(), vector<complex<double>>(m[0].size(), complex<double>())) ;
+	uchar *p ;
+	for(int r=0; r<f.size(); r++){
+		p = resize_m.ptr<uchar>(r) ;
+		for(int c=0; c<f[0].size(); c++){
+			f[r][c] = complex<double>(1-p[c]/255.0, 0) ;
 		}
 	}
-	return v ;
+	return mulVec(m, f) ;
+}
+
+vector<vector<complex<double>>> Butterworth_pass(vector<vector<complex<double>>> &m, double d0, double w, double n){
+	vector<vector<complex<double>>> f(m.size(), vector<complex<double>>(m[0].size(), complex<double>(0, 0))) ;
+	double d0square = d0*d0 ;
+	int cr = m.size()/2 ;
+	int cc = m[0].size()/2 ;
+	for(int r=0; r<f.size(); r++){
+		for(int c=0; c<f[0].size(); c++){
+			double duv = sqrt((r-cr)*(r-cr) + (c-cc)*(c-cc)) ;
+			if(duv>=(d0-w/2) && duv<=(d0+w/2)){
+				double base = duv*w/(duv*duv-d0square) ;
+				f[r][c] = 1 - 1/(1+pow(base, 2*n)) ;
+			}
+			//f[r][c] = complex<double>(k1 + k2*h, 0) ;
+		}
+	}
+	//Mat mf = vectorToMat(f) ;
+	//cvShowImage("butterworth reject", &IplImage(mf)) ;
+	return mulVec(m, f) ;
 }
